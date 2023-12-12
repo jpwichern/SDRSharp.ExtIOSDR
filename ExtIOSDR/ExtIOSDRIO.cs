@@ -9,10 +9,9 @@ namespace SDRSharp.ExtIOSDR
 {
     public unsafe class ExtIOSDRIO : IFrontendController, IDisposable, ISampleRateChangeSource, IControlAwareObject, IFloatingConfigDialogProvider /*, ISpectrumProvider, ITunableSource, IIQStreamController*/
     {
-        private const string _displayName = "USRP";
+        private const string _displayName = "ExtIOSDR";
         private readonly ExtIOSDRControllerDialog _gui;
         private string _filename = null;
-        private int _lastDLLSelected = -1;
         private bool _showingDLLSettingGUI = false;
         public event EventHandler SampleRateChanged;
 
@@ -38,6 +37,8 @@ namespace SDRSharp.ExtIOSDR
             GC.SuppressFinalize(this);
         }
 
+        public String LibraryInUse => _filename;
+
         public void UseLibrary(string filename)
         {
             _filename = filename;
@@ -52,8 +53,6 @@ namespace SDRSharp.ExtIOSDR
                 return _gui;
             }
         }
-
-        public int LastDLLSelected => _lastDLLSelected;
 
         public void Open()
         {
@@ -105,12 +104,12 @@ namespace SDRSharp.ExtIOSDR
 
         public void LoadSettings()
         {
-            _lastDLLSelected = Utils.GetIntSetting("ExtIODLLSelected", -1);
+            _filename = Utils.GetStringSetting("ExtIODLLSelected", null);
         }
 
         public void SaveSettings()
         {
-            Utils.SaveSetting("ExtIODLLSelected", _lastDLLSelected);
+            Utils.SaveSetting("ExtIODLLSelected", _filename);
         }
 
         public void SetControl(object control)

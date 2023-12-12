@@ -34,7 +34,7 @@ namespace SDRSharp.ExtIOSDR
             var dlls = Directory.GetFiles(".", "ExtIO_*.dll");
             dllComboBox.Items.Clear();
             dllComboBox.Items.AddRange(dlls);
-            dllComboBox.SelectedIndex = _owner.LastDLLSelected;
+            dllComboBox.SelectedIndex = dllComboBox.FindString(_owner.LibraryInUse);
             dllConfigButton.Enabled = _owner.HasDLLSettingGUI();
         }
 
