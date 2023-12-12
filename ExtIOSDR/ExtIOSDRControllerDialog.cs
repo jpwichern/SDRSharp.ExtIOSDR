@@ -4,6 +4,10 @@ using System.Globalization;
 using System.IO;
 using System.Windows.Forms;
 
+/*
+    Written by Jiri Wichern PG8W. 
+*/
+
 namespace SDRSharp.ExtIOSDR
 {
     public partial class ExtIOSDRControllerDialog : Form

@@ -2,6 +2,7 @@
  * -----------------------------
  * 
  * Written by Ian Gilmour (MM6DOS) and Youssef Touil (CN8???)
+ * Extended by Jiri Wichern (PG8W)
  * 
  * THIS CODE IS PLACED IN PUBLIC DOMAIN.
  * 

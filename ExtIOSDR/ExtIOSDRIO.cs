@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Windows.Forms;
-using System.ComponentModel;
 
 using SDRSharp.Common;
 using SDRSharp.Radio;
+
+/*
+    Written by Jiri Wichern PG8W.
+*/
 
 namespace SDRSharp.ExtIOSDR
 {
@@ -154,14 +157,14 @@ namespace SDRSharp.ExtIOSDR
         {
             get
             {
-                return ExtIO.MinFrequency;
+                return ExtIO.MinFrequency??;
             }
         }
         long ITunableSource.MaximumTunableFrequency
         {
             get
             {
-                return ExtIO.MaxFrequency;
+                return ExtIO.MaxFrequency??;
             }
         }*/
 

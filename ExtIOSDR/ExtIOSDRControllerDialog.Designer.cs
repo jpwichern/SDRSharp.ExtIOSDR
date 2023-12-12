@@ -1,5 +1,10 @@
 ﻿using System;
 
+/*
+    Written by Jiri Wichern PG8W.
+    Used RTLSDR plugin dialog box as a template.
+*/
+
 namespace SDRSharp.ExtIOSDR
 {
     partial class ExtIOSDRControllerDialog
