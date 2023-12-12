@@ -1,0 +1,1 @@
+<add key="ExtIOSDR" value="SDRSharp.ExtIOSDR.ExtIOSDRIO,SDRSharp.ExtIOSDR" />
