@@ -42,6 +42,11 @@ namespace SDRSharp.ExtIOSDR
             this.dllConfigButton = new System.Windows.Forms.Button();
             this.hwNameLabel = new System.Windows.Forms.Label();
             this.hwModelLabel = new System.Windows.Forms.Label();
+            this.freqRangeLabel = new System.Windows.Forms.Label();
+            this.attenuationLabel = new System.Windows.Forms.Label();
+            this.attenuatorsComboBox = new System.Windows.Forms.ComboBox();
+            this.samplerateLabel = new System.Windows.Forms.Label();
+            this.sampleratesComboBox = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // closeButton
@@ -65,7 +70,7 @@ namespace SDRSharp.ExtIOSDR
             this.dllComboBox.Name = "dllComboBox";
             this.dllComboBox.Size = new System.Drawing.Size(328, 24);
             this.dllComboBox.TabIndex = 0;
-            this.dllComboBox.SelectedIndexChanged += new System.EventHandler(this.dllComboBox_SelectedIndexChanged);
+            this.dllComboBox.SelectedIndexChanged += new System.EventHandler(this.DLLComboBox_SelectedIndexChanged);
             // 
             // label1
             // 
@@ -73,7 +78,7 @@ namespace SDRSharp.ExtIOSDR
             this.label1.Location = new System.Drawing.Point(16, 11);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(65, 16);
+            this.label1.Size = new System.Drawing.Size(71, 17);
             this.label1.TabIndex = 20;
             this.label1.Text = "ExtIO DLL";
             // 
@@ -90,6 +95,7 @@ namespace SDRSharp.ExtIOSDR
             // 
             // dllConfigButton
             // 
+            this.dllConfigButton.Enabled = false;
             this.dllConfigButton.Location = new System.Drawing.Point(245, 59);
             this.dllConfigButton.Margin = new System.Windows.Forms.Padding(4);
             this.dllConfigButton.Name = "dllConfigButton";
@@ -105,19 +111,73 @@ namespace SDRSharp.ExtIOSDR
             this.hwNameLabel.Location = new System.Drawing.Point(16, 100);
             this.hwNameLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.hwNameLabel.Name = "hwNameLabel";
-            this.hwNameLabel.Size = new System.Drawing.Size(65, 16);
+            this.hwNameLabel.Size = new System.Drawing.Size(0, 17);
             this.hwNameLabel.TabIndex = 20;
-            this.hwNameLabel.Text = "";
             // 
             // hwModelLabel
             // 
             this.hwModelLabel.AutoSize = true;
             this.hwModelLabel.Location = new System.Drawing.Point(16, 132);
             this.hwModelLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.hwModelLabel.Name = "hwNameLabel";
-            this.hwModelLabel.Size = new System.Drawing.Size(65, 16);
+            this.hwModelLabel.Name = "hwModelLabel";
+            this.hwModelLabel.Size = new System.Drawing.Size(0, 17);
             this.hwModelLabel.TabIndex = 20;
-            this.hwModelLabel.Text = "";
+            // 
+            // freqRangeLabel
+            // 
+            this.freqRangeLabel.AutoSize = true;
+            this.freqRangeLabel.Location = new System.Drawing.Point(16, 164);
+            this.freqRangeLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.freqRangeLabel.Name = "freqRangeLabel";
+            this.freqRangeLabel.Size = new System.Drawing.Size(0, 17);
+            this.freqRangeLabel.TabIndex = 20;
+            // 
+            // attenuationLabel
+            // 
+            this.attenuationLabel.AutoSize = true;
+            this.attenuationLabel.Location = new System.Drawing.Point(16, 196);
+            this.attenuationLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.attenuationLabel.Name = "attenuationLabel";
+            this.attenuationLabel.Size = new System.Drawing.Size(84, 17);
+            this.attenuationLabel.TabIndex = 20;
+            this.attenuationLabel.Text = "Attenuation:";
+            this.attenuationLabel.Visible = false;
+            // 
+            // attenuatorsComboBox
+            // 
+            this.attenuatorsComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.attenuatorsComboBox.FormattingEnabled = true;
+            this.attenuatorsComboBox.Location = new System.Drawing.Point(108, 189);
+            this.attenuatorsComboBox.Margin = new System.Windows.Forms.Padding(4);
+            this.attenuatorsComboBox.Name = "attenuatorsComboBox";
+            this.attenuatorsComboBox.Size = new System.Drawing.Size(121, 24);
+            this.attenuatorsComboBox.TabIndex = 0;
+            this.attenuatorsComboBox.Visible = false;
+            this.attenuatorsComboBox.SelectedIndexChanged += new System.EventHandler(this.AttenuatorsComboBox_SelectedIndexChanged);
+            this.attenuatorsComboBox.Click += new System.EventHandler(this.attenuatorsComboBox_Click);
+            // 
+            // samplerateLabel
+            // 
+            this.samplerateLabel.AutoSize = true;
+            this.samplerateLabel.Location = new System.Drawing.Point(16, 228);
+            this.samplerateLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.samplerateLabel.Name = "samplerateLabel";
+            this.samplerateLabel.Size = new System.Drawing.Size(88, 17);
+            this.samplerateLabel.TabIndex = 20;
+            this.samplerateLabel.Text = "Sample rate:";
+            this.samplerateLabel.Visible = false;
+            // 
+            // sampleratesComboBox
+            // 
+            this.sampleratesComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.sampleratesComboBox.FormattingEnabled = true;
+            this.sampleratesComboBox.Location = new System.Drawing.Point(108, 221);
+            this.sampleratesComboBox.Margin = new System.Windows.Forms.Padding(4);
+            this.sampleratesComboBox.Name = "sampleratesComboBox";
+            this.sampleratesComboBox.Size = new System.Drawing.Size(121, 24);
+            this.sampleratesComboBox.TabIndex = 0;
+            this.sampleratesComboBox.Visible = false;
+            this.sampleratesComboBox.SelectedIndexChanged += new System.EventHandler(this.SampleratesComboBox_SelectedIndexChanged);
             // 
             // ExtIOSDRControllerDialog
             // 
@@ -132,6 +192,11 @@ namespace SDRSharp.ExtIOSDR
             this.Controls.Add(this.dllConfigButton);
             this.Controls.Add(this.hwNameLabel);
             this.Controls.Add(this.hwModelLabel);
+            this.Controls.Add(this.freqRangeLabel);
+            this.Controls.Add(this.attenuationLabel);
+            this.Controls.Add(this.attenuatorsComboBox);
+            this.Controls.Add(this.samplerateLabel);
+            this.Controls.Add(this.sampleratesComboBox);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
@@ -157,6 +222,11 @@ namespace SDRSharp.ExtIOSDR
         private System.Windows.Forms.Button dllConfigButton;
         private System.Windows.Forms.Label hwNameLabel;
         private System.Windows.Forms.Label hwModelLabel;
+        private System.Windows.Forms.Label freqRangeLabel;
+        private System.Windows.Forms.Label attenuationLabel;
+        private System.Windows.Forms.ComboBox attenuatorsComboBox;
+        private System.Windows.Forms.Label samplerateLabel;
+        private System.Windows.Forms.ComboBox sampleratesComboBox;
     }
 }
 

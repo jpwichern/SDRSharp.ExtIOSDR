@@ -30,6 +30,9 @@ namespace SDRSharp.ExtIOSDR
 {
     public delegate void SampleRateChangedDelegate(int newSamplerate);
     public delegate void TuneChangedDelegate(long newTune);
+    public delegate void ModeChangedDelegate(char mode);
+    //public delegate void IFLimitsChangedDelegate(long low, long high);
+    public delegate void FiltChangedDelegate(int loCut, int hiCut, int pitch);
     public delegate void LOFrequencyChangedDelegate(int frequency);
     public delegate void LOFrequencyChangeAcceptedDelegate();
     public delegate void ProhibitLOChangesDelegate();
@@ -55,10 +58,10 @@ namespace SDRSharp.ExtIOSDR
             ProhibLO = 102, /* Prohibit LO changes */
             LOChangeOk = 103, /* LO change accepted */
             TuneChange = 105, /* Tune freq changed by hardware */
-            DemodChange = 106, /* Demodulator changed by hardware */
+            ModeChange = 106, /* Demodulator changed by hardware */
             RsqStart = 107, /* Request to start */
             RsqStop = 108, /* Request to stop */
-            FiltChange = 109 /* Filters have been changed by hardware */
+            FiltersChange = 109 /* Filters have been changed by hardware */
         }
 
         #endregion
@@ -84,6 +87,9 @@ namespace SDRSharp.ExtIOSDR
         public static SamplesAvailableDelegate SamplesAvailable;
         public static event SampleRateChangedDelegate SampleRateChanged;
         public static event TuneChangedDelegate TuneChanged;
+        public static event ModeChangedDelegate ModeChanged;
+        //public static event IFLimitsChangedDelegate IFLimitsChanged;
+        public static event FiltChangedDelegate FiltersChanged;
         public static event LOFrequencyChangedDelegate LOFreqChanged;
         public static event LOFrequencyChangeAcceptedDelegate LOFreqChangedAccepted;
         public static event ProhibitLOChangesDelegate ProhibitLOChanged;
@@ -125,7 +131,55 @@ namespace SDRSharp.ExtIOSDR
         private delegate int GetHWSRDelegate();
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void SetTuneDelegate(long tune);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate long GetTuneDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate char GetModeDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void SetModeDelegate(char mode);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate long SetIFLimitsDelegate(long lowfreq, long highfreq);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void SetFiltersDelegate(int loCut, int hiCut, int pitch);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void GetFiltersDelegate(int* loCut, int* hiCut, int* pitch);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int GetFreqRangesDelegate(int idx, long* freq_low, long* freq_high);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void SetAGCDelegate(int idx);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int GetAGCsDelegate(int idx, char* text);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int GetAGCIdxDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int SetAttenuatorDelegate(int idx);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int GetAttenuatorsDelegate(int idx, float* attenuation);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int GetAttenuatorIdxDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int SetSrateDelegate(int idx);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int GetSratesDelegate(int idx, double* sampleRate);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int GetSrateIdxDelegate();
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate int GetStatusDelegate();
@@ -135,6 +189,9 @@ namespace SDRSharp.ExtIOSDR
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate void HideGUIDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void SwitchGUIDelegate();
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate void SetSettingDelegate(int idx, char* value);
@@ -157,10 +214,27 @@ namespace SDRSharp.ExtIOSDR
         private static SetHWLODelegate _setHWLO;
         private static GetHWLODelegate _getHWLO;
         private static GetHWSRDelegate _getHWSR;
+        private static SetTuneDelegate _setTune;
         private static GetTuneDelegate _getTune;
+        private static GetModeDelegate _getMode;
+        private static SetModeDelegate _setMode;
+        private static SetIFLimitsDelegate _setIFLimits;
+        private static SetFiltersDelegate _setFilters;
+        private static GetFiltersDelegate _getFilters;
+        private static GetFreqRangesDelegate _getFreqRanges;
+        private static SetAGCDelegate _setAGC;
+        private static GetAGCsDelegate _getAGCs;
+        private static GetAGCIdxDelegate _getAGCIdx;
+        private static SetAttenuatorDelegate _setAttenuator;
+        private static GetAttenuatorsDelegate _getAttenuators;
+        private static GetAttenuatorIdxDelegate _getAttenuatorIdx;
+        private static SetSrateDelegate _setSrate;
+        private static GetSratesDelegate _getSrates;
+        private static GetSrateIdxDelegate _getSrateIdx;
         private static GetStatusDelegate _getStatus;
         private static ShowGUIDelegate _showGUI;
         private static HideGUIDelegate _hideGUI;
+        private static SwitchGUIDelegate _switchGUI;
         private static SetSettingDelegate _setSetting;
         private static GetSettingDelegate _getSetting;
         private static SetCallbackDelegate _setCallback;
@@ -211,9 +285,27 @@ namespace SDRSharp.ExtIOSDR
             _setHWLO = null;
             _getHWLO = null;
             _getHWSR = null;
+            _setTune = null;
+            _getTune = null;
+            _getMode = null;
+            _setMode = null;
+            _setIFLimits = null;
+            _setFilters = null;
+            _getFilters = null;
+            _getFreqRanges = null;
+            _setAGC = null;
+            _getAGCs = null;
+            _getAGCIdx = null;
+            _setAttenuator = null;
+            _getAttenuators = null;
+            _getAttenuatorIdx = null;
+            _setSrate = null;
+            _getSrates = null;
+            _getSrateIdx = null;
             _getStatus = null;
             _showGUI = null;
             _hideGUI = null;
+            _switchGUI = null;
             _setCallback = null;
 
             IntPtr pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "InitHW");
@@ -252,9 +344,73 @@ namespace SDRSharp.ExtIOSDR
             if (pAddressOfFunctionToCall != IntPtr.Zero)
                 _getHWSR = (GetHWSRDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetHWSRDelegate));
 
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "TuneChanged");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _setTune = (SetTuneDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SetTuneDelegate));
+
             pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "GetTune");
             if (pAddressOfFunctionToCall != IntPtr.Zero)
                 _getTune = (GetTuneDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetTuneDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "GetMode");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getMode = (GetModeDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetModeDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "ModeChanged");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _setMode = (SetModeDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SetModeDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "IFLimitsChanged");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+               _setIFLimits = (SetIFLimitsDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SetIFLimitsDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "FiltersChanged");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _setFilters = (SetFiltersDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SetFiltersDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "GetFilters");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getFilters = (GetFiltersDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetFiltersDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "GetFreqRanges");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getFreqRanges = (GetFreqRangesDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetFreqRangesDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "_ExtIoGetAGCs");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getAGCs = (GetAGCsDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetAGCsDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "_ExtIoGetActualAGCidx");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getAGCIdx = (GetAGCIdxDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetAGCIdxDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "_ExtIoSetAGC");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _setAGC = (SetAGCDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SetAGCDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "GetAttenuators");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getAttenuators = (GetAttenuatorsDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetAttenuatorsDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "GetActualAttIdx");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getAttenuatorIdx = (GetAttenuatorIdxDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetAttenuatorIdxDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "SetAttenuator");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _setAttenuator = (SetAttenuatorDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SetAttenuatorDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "ExtIoGetSrates");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getSrates = (GetSratesDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetSratesDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "ExtIoGetActualSrateIdx");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _getSrateIdx = (GetSrateIdxDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(GetSrateIdxDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "ExtIoSetSrate");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _setSrate = (SetSrateDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SetSrateDelegate));
 
             pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "GetStatus");
             if (pAddressOfFunctionToCall != IntPtr.Zero)
@@ -267,6 +423,10 @@ namespace SDRSharp.ExtIOSDR
             pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "HideGUI");
             if (pAddressOfFunctionToCall != IntPtr.Zero)
                 _hideGUI = (HideGUIDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(HideGUIDelegate));
+
+            pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "SwitchGUI");
+            if (pAddressOfFunctionToCall != IntPtr.Zero)
+                _switchGUI = (SwitchGUIDelegate)Marshal.GetDelegateForFunctionPointer(pAddressOfFunctionToCall, typeof(SwitchGUIDelegate));
 
             pAddressOfFunctionToCall = GetProcAddress(_dllHandle, "SetSetting");
             if (pAddressOfFunctionToCall != IntPtr.Zero)
@@ -373,6 +533,135 @@ namespace SDRSharp.ExtIOSDR
             return 0;
         }
 
+        public static char GetMode()
+        {
+            if (_dllHandle != IntPtr.Zero && _getMode != null)
+                return _getMode();
+            return '\0';
+        }
+
+        public static void SetMode(char mode)
+        {
+            if (_dllHandle != IntPtr.Zero && _setMode != null)
+                _setMode(mode);
+        }
+
+        public static int GetFreqRanges(int idx, out long freqLow, out long freqHigh)
+        {
+            freqLow = 0;
+            freqHigh = 0;
+            if (_dllHandle != IntPtr.Zero && _getFreqRanges != null)
+            {
+                fixed(long* fl = &freqLow, fh = &freqHigh)
+                {
+                    return _getFreqRanges(idx, fl, fh);
+                }
+            }
+            return -1;
+        }
+
+        public static void GetFilters(int* loCut, int* hiCut, int* pitch)
+        {
+            if (_dllHandle != IntPtr.Zero && _getFilters != null)
+                _getFilters(loCut, hiCut, pitch);
+        }
+
+        public static int GetAGCs(int idx, out string name)
+        {
+            name = "";
+            if (_dllHandle != IntPtr.Zero && _getAGCs != null)
+            {
+                char[] a = new char[16];
+                fixed (char* p = a)
+                {
+                    int ret = _getAGCs(idx, p);
+                    name = new string(a);
+                    MessageBox.Show(ret.ToString(), "test", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return ret;
+                }
+            }
+            return -1;
+        }
+
+        public static int GetAGCIdx()
+        {
+            if (_dllHandle != IntPtr.Zero && _getAGCIdx != null)
+                return _getAGCIdx();
+            return -1;
+        }
+
+        public static void SetAGC(int idx)
+        {
+            if (_dllHandle != IntPtr.Zero & _setAGC != null)
+                _setAGC(idx);
+        }
+
+        public static int GetAttenuators(int idx, out float attenuation)
+        {
+            attenuation = 0.0f;
+            if (_dllHandle != IntPtr.Zero && _getAttenuators != null)
+            {
+                fixed (float* a = &attenuation)
+                {
+                    return _getAttenuators(idx, a);
+                }
+            }
+            return -1;
+        }
+
+        public static int GetAttenuatorIdx()
+        {
+            if (_dllHandle != IntPtr.Zero && _getAttenuatorIdx != null)
+                return _getAttenuatorIdx();
+            return -1;
+        }
+
+        public static bool SetAttenuator(int idx)
+        {
+            if (_dllHandle != IntPtr.Zero & _setAttenuator != null)
+            {
+                int ret = _setAttenuator(idx);
+                if (ret != 0)
+                    MessageBox.Show("Failed to set attenuation", "Error " + ret.ToString(), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return ret == 0;
+            }
+            MessageBox.Show("Can't set attenuation", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+
+        public static int GetSrates(int idx, out double srate)
+        {
+            srate = 0.0f;
+            if (_dllHandle != IntPtr.Zero && _getSrates != null)
+            {
+                fixed (double* a = &srate)
+                {
+                    return _getSrates(idx, a);
+                }
+            }
+            return -1;
+        }
+
+        public static int GetSrateIdx()
+        {
+            if (_dllHandle != IntPtr.Zero && _getSrateIdx != null)
+                return _getSrateIdx();
+            return -1;
+        }
+
+        public static bool SetSrate(int idx)
+        {
+            if (_dllHandle != IntPtr.Zero & _setSrate != null)
+            {
+                int ret = _setSrate(idx);
+                if(ret != 0)
+                    MessageBox.Show("Failed to set sample rate", "Error " + ret.ToString(), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return ret == 0;
+            }
+            MessageBox.Show("Can't set sample rate", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+
         public static int GetHWLO()
         {
             int result = 0;
@@ -388,10 +677,20 @@ namespace SDRSharp.ExtIOSDR
             if (_dllHandle != IntPtr.Zero & _setHWLO != null)
                 _setHWLO(freq);
         }
-        public static void GetSetting(int idx, char* description, char* value)
+
+        public static void GetSetting(int idx, string description, out string value)
         {
-            if (_dllHandle != IntPtr.Zero & _getSetting != null)
-                _getSetting(idx, description, value);
+            value = "";
+            if (_dllHandle != IntPtr.Zero && _getSetting != null)
+            {
+                char[] a1 = description.ToCharArray();
+                char[] a2 = new char[16];
+                fixed (char* p1 = a1, p2 = a2)
+                {
+                    _getSetting(idx, p1, p2);
+                    value = new string(a2);
+                }
+            }
         }
 
         public static void SetSetting(int idx, char* value)
@@ -421,6 +720,12 @@ namespace SDRSharp.ExtIOSDR
                 _hideGUI();
         }
 
+        public static void SwitchGUI()
+        {
+            if (_dllHandle != IntPtr.Zero && _switchGUI != null)
+                _switchGUI();
+        }
+
         public static void StartHW(int freq)
         {
             if (_dllHandle == IntPtr.Zero || _startHW == null)
@@ -432,14 +737,14 @@ namespace SDRSharp.ExtIOSDR
             int result = _startHW(freq);
             if (result < 0)
                 throw new Exception("ExtIO StartHW() returned " + result);
-            
+
             _isHWStarted = true;
             _sampleCount = result;
 
             /* Allocate the sample buffers */
             /* We must do it here since we do not know the size until the hardware is started! */
             _iqBuffer = UnsafeBuffer.Create(_sampleCount, sizeof(Complex));
-            _iqPtr = (Complex*) _iqBuffer;
+            _iqPtr = (Complex*)_iqBuffer;
         }
 
         public static int OpenHW()
@@ -567,6 +872,23 @@ namespace SDRSharp.ExtIOSDR
                     case StatusEvent.TuneChange:
                         if (TuneChanged != null)
                             TuneChanged(GetTune());
+                        break;
+
+                    case StatusEvent.ModeChange:
+                        if (ModeChanged != null)
+                            ModeChanged(GetMode());
+                        break;
+
+                    case StatusEvent.FiltersChange:
+                        if (FiltersChanged != null)
+                        {
+                            int loCut = 0;
+                            int hiCut = 0;
+                            int pitch = 0;
+                            GetFilters(&loCut, &hiCut, &pitch);
+
+                            FiltersChanged(loCut, hiCut, pitch);
+                        }
                         break;
 
                     case StatusEvent.ProhibLO:

@@ -1,0 +1,40 @@
+Function overfiew of ExtIO_SDRplay_RSP1.dll
+
+Implemented and used:
+InitHW
+SetCallback
+OpenHW
+CloseHW
+StartHW
+StopHW
+ShowGUI
+HideGUI
+GetHWLO
+SetHWLO
+GetHWSR
+GetAttenuators
+GetActualAttIdx (isn't initialized)
+SetAttenuator
+ExtIoGetSrates
+ExtIoGetActualSrateIdx (fixed)
+
+Implemented and not used:
+SwitchGUI
+
+Implemented and doesn't work:
+ExtIoSetSrate
+
+Implemented and found doing nothing:
+_ExtIoGetAGCs@8
+_ExtIoGetActualAGCidx@0
+_ExtIoSetAGC@4
+
+
+ExtIoGetSetting
+ExtIoSetSetting
+GetMode
+GetStatus
+GetTune
+_IQCompensation@4
+ModeChanged
+TuneChanged
