@@ -11,23 +11,30 @@ using SDRSharp.Radio;
 
 namespace SDRSharp.ExtIOSDR
 {
+    public delegate void RunningStateChangedDelegate(bool running);
+    public delegate void LibraryChangedDelegate(bool open);
+
     public class ExtIOSDRIO : IExtIOSDRControllerDialogFacilitator, IFrontendController, IDisposable, ISampleRateChangeSource, IControlAwareObject, IFloatingConfigDialogProvider, IIQStreamController, ITunableSource /*, IFrontendOffset, ISpectrumProvider*/
     {
         private const string _displayName = "ExtIOSDR";
         //private bool _showingLibrarySettingGUI = false;
         private bool _opened = false;
+        public event RunningStateChangedDelegate RunningStateChanged;
+        public event LibraryChangedDelegate LibraryChanged;
         public event EventHandler SampleRateChanged;
         //public event EventHandler TuneChanged;
         //public event EventHandler LOFrequencyChanged;
         //public event EventHandler LOFrequencyChangedAccepted;
         private long _minFrequency = 0;
         private long _maxFrequency = 0;
+        private long _editableMinFrequency = 0;
+        private long _editableMaxFrequency = 0;
 
         public ExtIOSDRIO()
         {
             LoadSettings();
             GUI = new ExtIOSDRControllerDialog(this);
-        }
+         }
 
         ~ExtIOSDRIO()
         {
@@ -47,6 +54,41 @@ namespace SDRSharp.ExtIOSDR
 
         public String LibraryInUse { get; private set; }
 
+        public bool FrequenciesEditable { get; private set; } = false;
+
+        private bool _restartable = false;
+        public bool Restartable {
+            get
+            {
+                return _restartable;
+            }
+            set
+            {
+                if(_restartable != value)
+                {
+                    _restartable = value;
+                    SaveSettings();
+                }
+            }
+        }
+
+        private bool _running = false;
+        private bool Running
+        {
+            get
+            {
+                return _running;
+            }
+            set
+            {
+                if(value != _running)
+                {
+                    _running = value;
+                    RunningStateChanged?.Invoke(_running);
+                }
+            }
+        }
+
         private ExtIOSDRControllerDialog GUI { get; }
 
         public void Open()
@@ -56,11 +98,12 @@ namespace SDRSharp.ExtIOSDR
             ExtIO.UseLibrary(LibraryInUse);
             ExtIO.OpenHW();
             GetFrequencyRange();
+            GetAGCs();
             ExtIO.SampleRateChanged += ExtIO_SampleRateChanged;
             ///ExtIO.TuneChanged += ExtIO_TuneChanged;
             //ExtIO.LOFreqChanged += ExtIO_LOFrequencyChanged;
             //ExtIO.LOFreqChangedAccepted += ExtIO_LOFrequencyChangedAccepted;
-            GUI.OpeningLibrary();
+            LibraryChanged?.Invoke(true);
             _opened = true;
         }
 
@@ -68,7 +111,7 @@ namespace SDRSharp.ExtIOSDR
         {
             if (!_opened) return;
 
-            GUI.ClosingLibrary();
+            LibraryChanged?.Invoke(false);
             ExtIO.SampleRateChanged -= ExtIO_SampleRateChanged;
             //ExtIO.TuneChanged -= ExtIO_TuneChanged;
             //ExtIO.LOFreqChanged -= ExtIO_LOFrequencyChanged;
@@ -90,16 +133,40 @@ namespace SDRSharp.ExtIOSDR
 
             ExtIO.SamplesAvailable = callback;
             ExtIO.StartHW(ExtIO.GetHWLO());
+            Running = true;
         }
 
         public void Stop()
         {
             if (!_opened) return;
 
+            Running = false;
             ExtIO.StopHW();
             ExtIO.SamplesAvailable = null;
         }
 
+        private void Restart()
+        {
+            if (!_opened || !Restartable) return;
+
+            /*SamplesAvailableDelegate saveCallback = null;
+            if (Running)
+            {
+                saveCallback = ExtIO.SamplesAvailable;
+                Stop();
+            }
+            Close();
+            Open();
+            if (saveCallback != null) Start(saveCallback);*/
+
+            if (Running)
+            {
+                if (SampleRateChanged != null) {
+                    MessageBox.Show("Restart", "Samplerate changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    SampleRateChanged.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
 
 
         private bool IsSoundCardBased
@@ -109,9 +176,9 @@ namespace SDRSharp.ExtIOSDR
 
         void IFloatingConfigDialogProvider.ShowSettingGUI(IWin32Window parent)
         {
-            if (this.GUI.IsDisposed)
+            if (GUI.IsDisposed)
                 return;
-            GUI.OpeningLibrary();
+
             GUI.Show();
             GUI.Activate();
         }
@@ -120,17 +187,24 @@ namespace SDRSharp.ExtIOSDR
         {
             if (GUI.IsDisposed)
                 return;
+
             GUI.Hide();
         }
 
         public void LoadSettings()
         {
             LibraryInUse = Utils.GetStringSetting("ExtIODLLSelected", null);
+            _restartable = Utils.GetBooleanSetting("ExtIORestartable", false);
+            _editableMinFrequency = Utils.GetLongSetting("ExtIOEditableMinFrequency", 0);
+            _editableMaxFrequency = Utils.GetLongSetting("ExtIOEditableMaxFrequency", 0);
         }
 
         public void SaveSettings()
         {
             Utils.SaveSetting("ExtIODLLSelected", LibraryInUse);
+            Utils.SaveSetting("ExtIORestartable", _restartable);
+            Utils.SaveSetting("ExtIOEditableMinFrequency", _editableMinFrequency);
+            Utils.SaveSetting("ExtIOEditableMaxFrequency", _editableMaxFrequency);
         }
 
         void IControlAwareObject.SetControl(object control)
@@ -145,7 +219,12 @@ namespace SDRSharp.ExtIOSDR
 
         private void ExtIO_SampleRateChanged(int newSamplerate)
         {
-            SampleRateChanged?.Invoke(this, EventArgs.Empty);
+            //SampleRateChanged?.Invoke(this, EventArgs.Empty);
+            if(SampleRateChanged != null)
+            {
+                MessageBox.Show("To: " + newSamplerate.ToString(), "Samplerate changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SampleRateChanged.Invoke(this, EventArgs.Empty);
+            }
         }
 
         /*private void ExtIO_TuneChanged(long tune)
@@ -187,6 +266,17 @@ namespace SDRSharp.ExtIOSDR
             {
                 return _minFrequency;
             }
+            set
+            {
+                if (FrequenciesEditable && _editableMinFrequency != value)
+                {
+                    _minFrequency = value;
+                    _editableMinFrequency = value;
+                    SaveSettings();
+                    Restart();
+                }
+
+            }
         }
 
         public long MaximumTunableFrequency
@@ -194,6 +284,17 @@ namespace SDRSharp.ExtIOSDR
             get
             {
                 return _maxFrequency;
+            }
+            set
+            {
+                if (FrequenciesEditable && _editableMaxFrequency != value)
+                {
+                    _maxFrequency = value;
+                    _editableMaxFrequency = value;
+                    SaveSettings();
+                    Restart();
+                }
+
             }
         }
 
@@ -203,19 +304,33 @@ namespace SDRSharp.ExtIOSDR
             long freqHigh = 0;
             int idx = 0;
             while (ExtIO.GetFreqRanges(idx, out freqLow, out freqHigh) == 0) {
+                //TODO
                 String info = idx.ToString() + "|" + freqLow.ToString() + "|" + freqHigh.ToString();
-                MessageBox.Show(info, "FRange test", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(info, "FRange test", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 idx++;
             }
-            //MessageBox.Show("done", "test", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            _minFrequency = 0;
-            _maxFrequency = 1000000000;
+            if (idx == 0)
+            {
+                _minFrequency = _editableMinFrequency;
+                _maxFrequency = _editableMaxFrequency;
+                FrequenciesEditable = true;
+                return;
+            }
 
-            idx = 0;
+            _minFrequency = freqLow;
+            _maxFrequency = freqHigh;
+            FrequenciesEditable = false;
+            MessageBox.Show("done", "test", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void GetAGCs()
+        {
+            //TODO
+            int idx = 0;
             String name;
             while (ExtIO.GetAGCs(idx, out name) == 0)
             {
-                MessageBox.Show(idx.ToString() + ": " + name, "AGC test", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(idx.ToString() + ": " + name, "AGC test", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 idx++;
             }
         }
@@ -270,8 +385,10 @@ namespace SDRSharp.ExtIOSDR
             }
             set
             {
-                /*bool success =*/ ExtIO.SetSrate(value);
-                //if (!success)
+                bool success = ExtIO.SetSrate(value);
+                if (success)
+                    Restart();
+                //else
                 //    MessageBox.Show("Failed to set sample rate", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -296,16 +413,16 @@ namespace SDRSharp.ExtIOSDR
             }
         }*/
 
-        void IExtIOSDRControllerDialogFacilitator.StopLibrary()
-        {
-            Stop();
-            Close();
-        }
-
         void IExtIOSDRControllerDialogFacilitator.UseLibrary(String dll)
         {
             LibraryInUse = dll;
             Open();
+        }
+
+        void IExtIOSDRControllerDialogFacilitator.StopLibrary()
+        {
+            Stop();
+            Close();
         }
 
         bool IExtIOSDRControllerDialogFacilitator.HasDLLSettingGUI()

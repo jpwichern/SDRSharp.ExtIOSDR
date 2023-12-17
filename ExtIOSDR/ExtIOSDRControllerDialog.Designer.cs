@@ -47,6 +47,10 @@ namespace SDRSharp.ExtIOSDR
             this.attenuatorsComboBox = new System.Windows.Forms.ComboBox();
             this.samplerateLabel = new System.Windows.Forms.Label();
             this.sampleratesComboBox = new System.Windows.Forms.ComboBox();
+            this.RestartCheckBox = new System.Windows.Forms.CheckBox();
+            this.minFreqRangeTextBox = new System.Windows.Forms.TextBox();
+            this.maxFreqRangeTextBox = new System.Windows.Forms.TextBox();
+            this.freqRangeLabel2 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // closeButton
@@ -129,8 +133,9 @@ namespace SDRSharp.ExtIOSDR
             this.freqRangeLabel.Location = new System.Drawing.Point(16, 164);
             this.freqRangeLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.freqRangeLabel.Name = "freqRangeLabel";
-            this.freqRangeLabel.Size = new System.Drawing.Size(0, 17);
+            this.freqRangeLabel.Size = new System.Drawing.Size(54, 17);
             this.freqRangeLabel.TabIndex = 20;
+            this.freqRangeLabel.Text = "Range:";
             // 
             // attenuationLabel
             // 
@@ -179,12 +184,56 @@ namespace SDRSharp.ExtIOSDR
             this.sampleratesComboBox.Visible = false;
             this.sampleratesComboBox.SelectedIndexChanged += new System.EventHandler(this.SampleratesComboBox_SelectedIndexChanged);
             // 
+            // RestartCheckBox
+            // 
+            this.RestartCheckBox.AutoSize = true;
+            this.RestartCheckBox.Location = new System.Drawing.Point(19, 382);
+            this.RestartCheckBox.Name = "RestartCheckBox";
+            this.RestartCheckBox.Size = new System.Drawing.Size(187, 21);
+            this.RestartCheckBox.TabIndex = 21;
+            this.RestartCheckBox.Text = "Restart SDR on changes";
+            this.RestartCheckBox.UseVisualStyleBackColor = true;
+            this.RestartCheckBox.CheckedChanged += new System.EventHandler(this.restartCheckBox_CheckedChanged);
+            // 
+            // minFreqRangeTextBox
+            // 
+            this.minFreqRangeTextBox.Location = new System.Drawing.Point(78, 158);
+            this.minFreqRangeTextBox.Name = "minFreqRangeTextBox";
+            this.minFreqRangeTextBox.Size = new System.Drawing.Size(100, 22);
+            this.minFreqRangeTextBox.TabIndex = 22;
+            this.minFreqRangeTextBox.Visible = false;
+            this.minFreqRangeTextBox.TextChanged += new System.EventHandler(this.minFreqRangeTextBox_TextChanged);
+            // 
+            // maxFreqRangeTextBox
+            // 
+            this.maxFreqRangeTextBox.Location = new System.Drawing.Point(208, 158);
+            this.maxFreqRangeTextBox.Name = "maxFreqRangeTextBox";
+            this.maxFreqRangeTextBox.Size = new System.Drawing.Size(100, 22);
+            this.maxFreqRangeTextBox.TabIndex = 23;
+            this.maxFreqRangeTextBox.Visible = false;
+            this.maxFreqRangeTextBox.TextChanged += new System.EventHandler(this.maxFreqRangeTextBox_TextChanged);
+            // 
+            // freqRangeLabel2
+            // 
+            this.freqRangeLabel2.AutoSize = true;
+            this.freqRangeLabel2.Location = new System.Drawing.Point(315, 161);
+            this.freqRangeLabel2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.freqRangeLabel2.Name = "freqRangeLabel2";
+            this.freqRangeLabel2.Size = new System.Drawing.Size(25, 17);
+            this.freqRangeLabel2.TabIndex = 24;
+            this.freqRangeLabel2.Text = "Hz";
+            this.freqRangeLabel2.Visible = false;
+            // 
             // ExtIOSDRControllerDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.closeButton;
             this.ClientSize = new System.Drawing.Size(361, 421);
+            this.Controls.Add(this.freqRangeLabel2);
+            this.Controls.Add(this.maxFreqRangeTextBox);
+            this.Controls.Add(this.minFreqRangeTextBox);
+            this.Controls.Add(this.RestartCheckBox);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.dllComboBox);
             this.Controls.Add(this.closeButton);
@@ -227,6 +276,10 @@ namespace SDRSharp.ExtIOSDR
         private System.Windows.Forms.ComboBox attenuatorsComboBox;
         private System.Windows.Forms.Label samplerateLabel;
         private System.Windows.Forms.ComboBox sampleratesComboBox;
+        private System.Windows.Forms.CheckBox RestartCheckBox;
+        private System.Windows.Forms.TextBox minFreqRangeTextBox;
+        private System.Windows.Forms.TextBox maxFreqRangeTextBox;
+        private System.Windows.Forms.Label freqRangeLabel2;
     }
 }
 

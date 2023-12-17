@@ -12,15 +12,19 @@ namespace SDRSharp.ExtIOSDR
 {
     public interface IExtIOSDRControllerDialogFacilitator
     {
+        event RunningStateChangedDelegate RunningStateChanged;
+        event LibraryChangedDelegate LibraryChanged;
         void UseLibrary(string dll);
         void StopLibrary();
         String LibraryInUse { get; }
+        bool FrequenciesEditable { get; }
+        bool Restartable { get; set; }
         void SaveSettings();
         bool HasDLLSettingGUI();
         void ShowDLLSettingGUI(IWin32Window parent);
         void HideDLLSettingGUI();
-        long MinimumTunableFrequency { get; }
-        long MaximumTunableFrequency { get; }
+        long MinimumTunableFrequency { get; set; }
+        long MaximumTunableFrequency { get; set; }
         float[] GetAttenuators();
         int AttenuatorIdx { get; set; }
         double[] GetSamplerates();
@@ -37,8 +41,25 @@ namespace SDRSharp.ExtIOSDR
             InitializeComponent();
 
             _owner = owner;
+            _owner.RunningStateChanged += ExtIOSDR_RunningStateChanged;
+            _owner.LibraryChanged += ExtIOSDR_LibraryChanged;
             SetDLLs();
+            RestartCheckBox.Checked = _owner.Restartable;
             _initialized = true;
+        }
+
+        private void ExtIOSDR_RunningStateChanged(bool running)
+        {
+
+        }
+
+        private void ExtIOSDR_LibraryChanged(bool open)
+        {
+            if (!Initialized)
+                return;
+
+            if (open) OpeningLibrary();
+            else ClosingLibrary();
         }
 
         private bool Initialized
@@ -67,18 +88,13 @@ namespace SDRSharp.ExtIOSDR
             return d.ToString();
         }
 
-        public void OpeningLibrary()
+        private void OpeningLibrary()
         {
-            if (!Initialized)
-                return;
-
             dllConfigButton.Enabled = _owner.HasDLLSettingGUI();
             hwNameLabel.Text = ExtIO.HWName;
             hwModelLabel.Text = ExtIO.HWModel;
 
-            long min = _owner.MinimumTunableFrequency;
-            long max = _owner.MaximumTunableFrequency;
-            freqRangeLabel.Text = min.ToString() + " - " + max.ToString() + " Hz";
+            UpdateFreqRange();
             attenuatorsComboBox.Items.Clear();
             float[] attenuators = _owner.GetAttenuators();
             if (attenuators.Length > 0)
@@ -99,7 +115,7 @@ namespace SDRSharp.ExtIOSDR
             }
         }
 
-        public void ClosingLibrary()
+        private void ClosingLibrary()
         {
             _owner.HideDLLSettingGUI();
             dllConfigButton.Enabled = false;
@@ -110,6 +126,28 @@ namespace SDRSharp.ExtIOSDR
             attenuatorsComboBox.Visible = false;
             samplerateLabel.Visible = false;
             sampleratesComboBox.Visible = false;
+        }
+
+        private void UpdateFreqRange()
+        {
+            
+            if (_owner.FrequenciesEditable)
+            {
+                freqRangeLabel.Text = "Range: ";
+                freqRangeLabel2.Visible = true;
+                minFreqRangeTextBox.Visible = true;
+                minFreqRangeTextBox.Text = _owner.MinimumTunableFrequency.ToString();
+                maxFreqRangeTextBox.Visible = true;
+                maxFreqRangeTextBox.Text = _owner.MaximumTunableFrequency.ToString();
+            }
+            else
+            {
+                freqRangeLabel2.Visible = false;
+                minFreqRangeTextBox.Visible = false;
+                maxFreqRangeTextBox.Visible = false;
+                freqRangeLabel.Text = "Range: " + _owner.MinimumTunableFrequency.ToString() + " - " + _owner.MaximumTunableFrequency.ToString() + " Hz";
+            }
+
         }
 
         private void closeButton_Click(object sender, EventArgs e)
@@ -189,7 +227,8 @@ namespace SDRSharp.ExtIOSDR
                 return;
 
             var samplerateIndex = sampleratesComboBox.SelectedIndex;
-            _owner.SamplerateIdx = samplerateIndex;
+            if (samplerateIndex >= 0)
+                _owner.SamplerateIdx = samplerateIndex;
             sampleratesComboBox.SelectedIndex = _owner.SamplerateIdx;
         }
 
@@ -199,6 +238,48 @@ namespace SDRSharp.ExtIOSDR
             set;
         }
 
+        private void restartCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!Initialized)
+                return;
 
+            _owner.Restartable = RestartCheckBox.Checked;
+        }
+
+        private void minFreqRangeTextBox_TextChanged(object sender, EventArgs e)
+        {
+            long newMin = 0;
+            try
+            {
+                newMin = long.Parse(minFreqRangeTextBox.Text);
+            }
+            catch(Exception)
+            {
+                return;
+            }
+
+            if (newMin != _owner.MinimumTunableFrequency)
+            {
+                _owner.MinimumTunableFrequency = newMin;
+            }
+        }
+
+        private void maxFreqRangeTextBox_TextChanged(object sender, EventArgs e)
+        {
+            long newMax = 0;
+            try
+            {
+                newMax = long.Parse(maxFreqRangeTextBox.Text);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            if (newMax != _owner.MaximumTunableFrequency)
+            {
+                _owner.MaximumTunableFrequency = newMax;
+            }
+        }
     }
 }
